@@ -1,0 +1,25 @@
+{
+  "name": "ppCrawler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ssb198923/ppCrawler.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ssb198923/ppCrawler/issues"
+  },
+  "homepage": "https://github.com/ssb198923/ppCrawler#readme",
+  "dependencies": {
+    "axios": "^0.26.0",
+    "cheerio": "^1.0.0-rc.10",
+    "iconv-lite": "^0.6.3"
+  }
+}
