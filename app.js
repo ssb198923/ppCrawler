@@ -1,7 +1,9 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED='0';
+
 const iconv = require("iconv-lite");
 const axios = require("axios");
 const cheerio = require("cheerio");
-const log = console.log;
+const fs = require("fs");
 
 const getHtml = async () => {
     return await axios({
@@ -20,11 +22,18 @@ getHtml()
 
         $list.each(function(idx, elem){
             trList[idx] = {
-                title: $(this).find(".list_title").text()
+                title: $(this).find(".list_title").text().trim()
             };
         });
 
     const data = trList.filter(n => n.title);
     return data;
     })
-    .then(res => log(res));
+    .then(res => {
+        try{
+            let data = JSON.stringify(res);
+            fs.writeFileSync('ppData.json',data);
+        } catch(err) {
+            fs.appendFileSync('err.log',err.toString());
+        }
+    });
