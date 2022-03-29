@@ -1,18 +1,19 @@
 const express = require('express');
-const app = express();
+const server = express();
 const port = 5000;
 require("dotenv").config();
 
-app.get('/', function (req, res) {
-    res.send('hello world!!');
+server.get('/', (req, res) => {
+
+    res.sendFile(__dirname+"/index.html");
 });
 
-app.listen(port, () => console.log(`${port}포트입니다.`));
+server.get('/about', (req, res) => {
 
+    res.sendFile(__dirname+"/about.html");
+});
 
 const url = process.env.URI;
-
-console.log(url);
 
 const mongoose = require('mongoose');
 mongoose
