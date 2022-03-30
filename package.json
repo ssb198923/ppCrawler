@@ -24,7 +24,10 @@
     "express": "^4.17.3",
     "fs": "0.0.1-security",
     "iconv-lite": "^0.6.3",
-    "mongoose": "^6.2.4"
+    "md5": "^2.3.0",
+    "mongodb": "^4.4.1",
+    "mongoose": "^6.2.4",
+    "node-telegram-bot-api": "^0.56.0"
   },
   "devDependencies": {},
   "description": ""
