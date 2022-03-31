@@ -26,7 +26,7 @@ exports.updateDb = (query, data) => {
     MongoClient.connect(url, function(err, db) {
         if (err) throw err;
         var dbo = db.db(crawlDb);
-        console.log(data);
+        
         dbo.collection(dbCollenction).updateMany(
             query,
             data,

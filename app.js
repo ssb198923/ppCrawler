@@ -10,22 +10,21 @@ const MD5 = require("md5");
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
 const keywordArr = ['hmall', 'H몰', '감기몰', '더현대', '현대백화점'];
-// const keywordArr = ['hmall'];
+// const keywordArr = ['현대홈쇼핑', '현대몰', '현대hmall', '현대h몰'];
 
-
-
-const getHtml = (keyword) => {
+const getHtml = async (keyword) => {
     const encodedKeyword = encodeURI(keyword);
-    return AXIOS({
+    return await AXIOS({
         url: `${urlPrefix}zboard/zboard.php?id=ppomppu&page_num=20&category=&search_type=sub_memo&keyword=${encodedKeyword}`,
         method: "GET", 
-        resultponseType: "arraybuffer"
+        resultponseType: "arraybuffer",
+        responseEncoding: "binary"
       }).catch(function (err) { FS.appendFileSync('err.log',err.toString()); });
 }
 
-keywordArr.forEach( keyword => getHtml(keyword)
+keywordArr.forEach( async keyword => await getHtml(keyword)
     .then( html => {
-        const decoded = ICONV.decode(html.data,'EUC-KR');
+        const decoded = ICONV.decode(Buffer.from(html.data, 'binary'), 'euc-kr');
         let itemList = [];
         const $ = CHEERIO.load(decoded);
         const $list = $("table#revolution_main_table tbody").children("tr[class^='list']:not(.list_notice)");
@@ -37,18 +36,18 @@ keywordArr.forEach( keyword => getHtml(keyword)
             itemList[idx] = {
                 _id : MD5(url),
                 keyword : keyword,
-                title : $(this).find(".list_title").text().trim(),
+                title : $(this).find(".list_title").text().toString("UTF-8").trim(),
                 url : url,
                 regdate : regdate.indexOf(":") >= 0 ? UTIL.getYmdDate(Date.now()) : UTIL.getYmdDate(`20${regdate}`),
                 pstv_cnt : score.indexOf("-") >= 0 ? score.split("-")[0].trim() : "0",
                 ngtv_cnt : score.indexOf("-") >= 0 ? score.split("-")[1].trim() : "0",
-                crwal_date : UTIL.getYmdDate(Date.now()),
+                crawl_date : UTIL.getYmdDate(Date.now()),
             };
             // if(idx==0) return false;
         });
 
         const data = itemList.filter(n => n.title != '' && n.url!=undefined);
-        console.log(data);
+        // console.log(data);
         return data;
     })
     .then( result => {
