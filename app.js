@@ -23,7 +23,7 @@ const getHtml = async (keyword) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { FS.appendFileSync('err.log',`[${Date.now()}] ${err.toString()}\n`); });
+      .catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
 }
 
 async function getBulkOpts(data) {
@@ -100,7 +100,7 @@ async function crawlPage(keywordArr) {
     }
 }
 
-crawlPage(keywordArr).catch(function (err) { FS.appendFileSync('err.log',`[${Date.now()}] ${err.toString()}\n`); });
+crawlPage(keywordArr).catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
 
 // keywordArr.forEach(function(keyword){
 //     getHtml(keyword)
