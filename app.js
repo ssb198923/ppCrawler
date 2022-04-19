@@ -89,7 +89,7 @@ async function crawlPage(keywordArr) {
                     res.forEach( (item) => {
                         if(keyword !== item.keyword){
                             keyword = item.keyword;
-                            msgTxt.push(`검색키워드 : ${keyword}`);
+                            msgTxt.push(`\n[${keyword}]`);
                         }                        
                         msgTxt.push(`<a href="${item.url}">${item.title}</a>`);
                     });
