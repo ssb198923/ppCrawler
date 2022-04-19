@@ -1,12 +1,5 @@
 process.env.NODE_TLS_REJECT_UNAUTHORIZED='0';
 
-// URI=mongodb://localhost:27017/crawlDb
-// DBNAME=crawlDb
-// COLLECTION=ppomppu
-// INTERVAL=300000
-// BOT_TOKEN=5278992860:AAEm-A0TZM5FVByRd-TLC_gmO5T6VqO2QFo
-// BOT_CHANNEL_ID=-1001536101901
-
 const ICONV = require("iconv-lite");
 const AXIOS = require("axios");
 const CHEERIO = require("cheerio");
