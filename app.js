@@ -42,6 +42,7 @@ async function getBulkOps(data) {
 }
 
 async function crawlPage(keywordArr) {
+    const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay))
     let data = [];
     let dataIdx = 0;
     for (const keyword of keywordArr){
@@ -70,10 +71,12 @@ async function crawlPage(keywordArr) {
             };
             dataIdx++;
         });
+        await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
+
     }
 
     data = data.filter(n => n.title != '' && typeof n.url != "undefined");
-    // console.log(data);
+    console.log(data);
 
     let bulkOps = await getBulkOps(data);
     // console.log(bulkOps);
