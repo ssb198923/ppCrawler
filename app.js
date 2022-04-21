@@ -13,7 +13,7 @@ const interval = process.env.INTERVAL;
 const urlPrefix = "https://www.ppomppu.co.kr/";
 // const keywordArr = ['hmall'];
 const keywordArr = ['hmall', 'H몰', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', '현대hmall', '현대h몰'];
-// const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑'];
+// const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
 
 const getHtml = async (keyword) => {
     const encodedKeyword = encodeURI(keyword);
@@ -71,12 +71,12 @@ async function crawlPage(keywordArr) {
             };
             dataIdx++;
         });
-        await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
+        // await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
 
     }
 
     data = data.filter(n => n.title != '' && typeof n.url != "undefined");
-    console.log(data);
+    // console.log(data);
 
     let bulkOps = await getBulkOps(data);
     // console.log(bulkOps);
@@ -90,11 +90,13 @@ async function crawlPage(keywordArr) {
                     let msgTxt = [];
                     let keyword;
                     res.forEach( (item) => {
+                        let utcDate = new Date(item.regutc);
+                        let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() ) + ":" + ( utcDate.getSeconds() < 10 ? "0" + utcDate.getSeconds() : utcDate.getSeconds() );
                         if(keyword !== item.keyword){
                             keyword = item.keyword;
                             msgTxt.push(`\n[${keyword}]`);
                         }                        
-                        msgTxt.push(`<a href="${item.url}">${item.title}</a>`);
+                        msgTxt.push(`<a href="${item.url}">${item.title}</a> ${regTime}`);
                     });
                     TG.sendMsg(msgTxt.join("\n"));
                 }
