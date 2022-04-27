@@ -9,22 +9,35 @@ const FS = require("fs");
 const TG = require("./src/push");
 require("dotenv").config();
 const interval = process.env.INTERVAL;
+const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
-// const keywordArr = ['hmall'];
-const keywordArr = ['hmall', 'H몰', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', '현대hmall', '현대h몰', '에이치몰'];
+// const keywordArr = ['GS'];
+const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
+// const boardIdArr = ['ppomppu','freeboard'];
 
-const getHtml = async (keyword) => {
+const getSearchHtml = async (keyword) => {
     const encodedKeyword = encodeURI(keyword);
     return await AXIOS({
-        url: `${urlPrefix}zboard/zboard.php?id=ppomppu&page_num=20&category=&search_type=sub_memo&keyword=${encodedKeyword}`,
+        url: `${urlPrefix}search_bbs.php?page_size=20&bbs_cate=2&keyword=${encodedKeyword}&order_type=date&search_type=sub_memo`,
         method: "GET", 
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
       .catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
 }
+
+const getPageHtml = async (url) => {
+    return await AXIOS({
+        url: url,
+        method: "GET", 
+        resultponseType: "arraybuffer",
+        responseEncoding: "binary"
+      })
+      .catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
+}
+
 
 async function getBulkOps(data) {
     let bulkOps = [];
@@ -42,37 +55,54 @@ async function getBulkOps(data) {
 }
 
 async function crawlPage(keywordArr) {
-    const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
     let data = [];
     let dataIdx = 0;
+    let decoded;
     for (const keyword of keywordArr){
-        let html = await getHtml(keyword);
+        let html = await getSearchHtml(keyword);
 
-        const decoded = ICONV.decode(Buffer.from(html.data, 'binary'), 'euc-kr');
+        decoded = ICONV.decode(Buffer.from(html.data, 'binary'), 'euc-kr');
         const $ = CHEERIO.load(decoded);
-        const $list = $("table#revolution_main_table tbody").children("tr[class^='list']:not(.list_notice)");
+        const $list = $(".results_board .conts");
 
-        $list.each(function(idx, elem){
-            const url = urlPrefix.concat('zboard/',$(this).find(".list_title").parent("a").attr("href"));
-            const score = $(this).find("td:nth-child(5)").text();
-            const regdate = $(this).find("[title] nobr").text();
-            if(regdate.indexOf('/') >= 0) return true;
-            const regUtc = UTIL.getUtcTime(UTIL.getYmdDate(Date.now()).toString().concat(regdate.replace(/:/gi,"")));
+        for(const listItem of $list){
+            const url = urlPrefix.concat('', $(listItem).find(".title a").attr("href"));
+            const itemHtml = await getPageHtml(url);
+            decoded = ICONV.decode(Buffer.from(itemHtml.data, 'binary'), 'euc-kr');
+            const $page = CHEERIO.load(decoded);
+
+            if($page(".error2").length != 0) continue;
+
+            // console.log("_id", url.split("no=")[1].split("&")[0].trim());
+            // console.log("keyword", keyword);
+            // console.log("board_id", url.split("id=")[1].split("&")[0].trim());
+            // console.log("board", $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim());
+            // console.log("title", $page(".sub-top-text-box .view_title2").text());
+            // console.log("url", url);
+            // console.log("regdate", $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00");
+            // console.log("pstv_cnt", $(listItem).find(".like").text().trim());
+            // console.log("ngtv_cnt", $(listItem).find(".dislike").text().trim());
+            // console.log("crawl_date", UTIL.getYmdDate(Date.now()));
+
+            const regdate = $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00";
+            const regUtc = UTIL.getUtcTime(regdate);
             data[dataIdx] = {
-                _id : $(this).find("td:nth-child(1)").text().trim(),
+                _id : url.split("no=")[1].split("&")[0].trim(),
                 keyword : keyword,
-                title : $(this).find(".list_title").text().toString("UTF-8").trim(),
+                board_id : url.split("id=")[1].split("&")[0].trim(),
+                board : $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim(),
+                title : $page(".sub-top-text-box .view_title2").text().trim(),
                 url : url,
-                regdate : regdate.indexOf(":") >= 0 ? UTIL.getYmdDate(Date.now()) : UTIL.getYmdDate(`20${regdate}`),
+                regdate : regdate,
                 regutc : regUtc,
-                pstv_cnt : score.indexOf("-") >= 0 ? score.split("-")[0].trim() : "0",
-                ngtv_cnt : score.indexOf("-") >= 0 ? score.split("-")[1].trim() : "0",
+                pstv_cnt : $(listItem).find(".like").text().trim(),
+                ngtv_cnt : $(listItem).find(".dislike").text().trim(),
                 crawl_date : UTIL.getYmdDate(Date.now()),
             };
-            dataIdx++;
-        });
-        // await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
 
+            dataIdx++;
+            await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
+        }
     }
 
     data = data.filter(n => n.title != '' && typeof n.url != "undefined");
@@ -91,12 +121,12 @@ async function crawlPage(keywordArr) {
                     let keyword;
                     res.forEach( (item) => {
                         let utcDate = new Date(item.regutc);
-                        let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() ) + ":" + ( utcDate.getSeconds() < 10 ? "0" + utcDate.getSeconds() : utcDate.getSeconds() );
+                        let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
                         if(keyword !== item.keyword){
                             keyword = item.keyword;
-                            msgTxt.push(`\n[${keyword}]`);
-                        }                        
-                        msgTxt.push(`<a href="${item.url}">${item.title}</a> ${regTime}`);
+                            msgTxt.push(`\n[키워드 : ${keyword}]`);
+                        }
+                        msgTxt.push(`[${item.board}]<a href="${item.url}">${item.title}</a> ${regTime}`);
                     });
                     TG.sendMsg(msgTxt.join("\n"));
                 }
@@ -106,6 +136,4 @@ async function crawlPage(keywordArr) {
 }
 
 crawlPage(keywordArr).catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
-
-console.log("end");
 
