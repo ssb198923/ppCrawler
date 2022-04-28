@@ -4,68 +4,52 @@ const url = process.env.URI;
 const crawlDb = process.env.DBNAME;
 const dbCollenction = process.env.COLLECTION;
 
-exports.insertDb = (data) => {
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db(crawlDb);
-        dbo.collection(dbCollenction).insertMany(
-            data,
-            {
-                ordered: false
-            },
-            function(err, res) {
+exports.bulkWriteDb = (bulkOps) => {
+    return new Promise(function (resolve, reject){
+        MongoClient.connect(url, function(err, db) {
             if (err) throw err;
-                console.log("Number of documents inserted: " + res.insertedCount);
-                db.close();
-            }
-        );
+            const dbo = db.db(crawlDb);
+            dbo.collection(dbCollenction).bulkWrite(
+                bulkOps,
+                function(err, res) {
+                    db.close();
+                    if (err) reject(err);
+                    resolve(res)
+                    return res;
+                }
+            );
+        });
     });
 }
 
-exports.bulkWriteDb = (bulkOps, cb) => {
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-        const dbo = db.db(crawlDb);
-        dbo.collection(dbCollenction).bulkWrite(
-            bulkOps,
-            function(err, res) {
+exports.selectDb = (query) => {
+    return new Promise(function (resolve, reject){
+        MongoClient.connect(url, function(err, db) {
+            if (err) reject(err);
+            const dbo = db.db(crawlDb);
+            dbo.collection(dbCollenction).find(query).toArray(function (err, res) {
+                if (err) reject(err);
+                // console.log(res);
                 db.close();
-                if (err) throw err;
-                return cb(null, res);
-            }
-        );
+                resolve(res);
+                return res;
+            });
+        });
     });
 }
 
-exports.updateDb = (query, data) => {
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db(crawlDb);
-        
-        dbo.collection(dbCollenction).updateMany(
-            query,
-            data,
-            {
-                upsert: true
-            },
-            function(err, res) {
-                if (err) throw err;
-                console.log("Number of documents updated: " + res.upsertedCount);
+exports.getCount = (query) => {
+    return new Promise(function (resolve, reject){
+        MongoClient.connect(url, function(err, db) {
+            if (err) reject(err);
+            const dbo = db.db(crawlDb);
+            dbo.collection(dbCollenction).countDocuments(query)
+            .then((res) => {
+                resolve(res);
                 db.close();
-            }
-        );
-    });
-}
-
-exports.selectDb = (query, cb) => {
-    MongoClient.connect(url, function(err, db) {
-        if (err) throw err;
-        var dbo = db.db(crawlDb);
-        dbo.collection(dbCollenction).find(query).toArray( function (err, res) {
-            if (err) throw err;
-            // console.log(result);
-            db.close();
-            return cb(null, res);
+                return res;
+            })
+            .catch((err) => reject(err));
         });
     });
 }

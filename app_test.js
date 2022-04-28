@@ -13,8 +13,8 @@ const interval = process.env.INTERVAL;
 const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
-// const keywordArr = ['GS'];
-const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
+const keywordArr = ['GS'];
+// const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
 // const boardIdArr = ['ppomppu','freeboard'];
 
