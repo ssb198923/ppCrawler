@@ -73,7 +73,7 @@ async function crawlPage(keywordArr) {
             const cntDocById = await DBCONN.getCount({ _id : itemId });
             // console.log(cntDocById);
 
-            // if(cntDocById == 0){
+            if(cntDocById == 0){
 
                 const itemHtml = await getPageHtml(url);
                 decoded = ICONV.decode(Buffer.from(itemHtml.data, 'binary'), 'euc-kr');
@@ -110,7 +110,7 @@ async function crawlPage(keywordArr) {
 
                 dataIdx++;
                 await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
-            // }
+            }
         }
     }
 
