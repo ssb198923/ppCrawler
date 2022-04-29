@@ -134,6 +134,7 @@ async function crawlPage(keywordArr) {
 
     DBCONN.selectDb({ regutc : { $gt : (Date.now()-pushTerm) } })
     .then((res) => {
+        let pushedCnt = 0;
         if(res.length >= 1){
             let msgTxt = [];
             let keyword;
@@ -145,10 +146,13 @@ async function crawlPage(keywordArr) {
                     msgTxt.push(`\n[키워드 : ${keyword}]`);
                 }
                 msgTxt.push(`[${doc.board}] <a href="${doc.url}">${doc.title}</a> ${regTime}`);
+                pushedCnt++;
             });
             TG.sendMsg(msgTxt.join("\n"));
             UTIL.logging("proc", `pushed : ${msgTxt.join("\n")}`);
         }
+        UTIL.logging("proc", `pushed count : ${pushedCnt}`);
+        UTIL.logging("proc", `Done`);
     })
     .catch((err)=> { throw err; } );
 }

@@ -5,11 +5,10 @@ const AXIOS = require("axios");
 const CHEERIO = require("cheerio");
 const DBCONN = require("./src/dbConn");
 const UTIL = require("./src/util");
-const FS = require("fs");
 const TG = require("./src/push");
-const res = require("express/lib/response");
 require("dotenv").config();
-const interval = process.env.INTERVAL;
+const pushTerm = process.env.PUSH_TERM;
+const crawlTerm = process.env.CRAWL_TERM;
 const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
@@ -26,7 +25,7 @@ const getSearchHtml = async (keyword) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
+      .catch(function (err) { UTIL.logging("err", err.toString()); });
 }
 
 const getPageHtml = async (url) => {
@@ -36,9 +35,8 @@ const getPageHtml = async (url) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
+      .catch(function (err) { UTIL.logging("err", err.toString()); });
 }
-
 
 async function getBulkOps(data) {
     let bulkOps = [];
@@ -60,6 +58,7 @@ async function crawlPage(keywordArr) {
     let dataIdx = 0;
     let decoded;
     for (const keyword of keywordArr){
+        UTIL.logging("proc", `Crawling start : ${keyword}`);
         let html = await getSearchHtml(keyword);
 
         decoded = ICONV.decode(Buffer.from(html.data, 'binary'), 'euc-kr');
@@ -69,31 +68,27 @@ async function crawlPage(keywordArr) {
         for(const listItem of $list){
             const url = urlPrefix.concat('', $(listItem).find(".title a").attr("href"));
             const itemId = url.split("no=")[1].split("&")[0].trim();
+            const itemRegDate = $(listItem).find(".desc span:nth-child(3)").text().replace(/[\.]/g, "").trim().concat("000000");
 
-            const cntDocById = await DBCONN.getCount({ _id : itemId });
+            if(UTIL.getUtcTime(itemRegDate) < (Date.now()-crawlTerm)) continue;
+
+            // const cntDocById = await DBCONN.getCount({ _id : itemId });
             // console.log(cntDocById);
 
-            if(cntDocById == 0){
-
+            if(await DBCONN.getCount({ _id : itemId }) == 0){
+                UTIL.logging("proc", `get page : ${url}`);
                 const itemHtml = await getPageHtml(url);
                 decoded = ICONV.decode(Buffer.from(itemHtml.data, 'binary'), 'euc-kr');
                 const $page = CHEERIO.load(decoded);
 
-                if($page(".error2").length != 0) continue;
-
-                // console.log("_id", url.split("no=")[1].split("&")[0].trim());
-                // console.log("keyword", keyword);
-                // console.log("board_id", url.split("id=")[1].split("&")[0].trim());
-                // console.log("board", $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim());
-                // console.log("title", $page(".sub-top-text-box .view_title2").text());
-                // console.log("url", url);
-                // console.log("regdate", $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00");
-                // console.log("pstv_cnt", $(listItem).find(".like").text().trim());
-                // console.log("ngtv_cnt", $(listItem).find(".dislike").text().trim());
-                // console.log("crawl_date", UTIL.getYmdDate(Date.now()));
+                if($page(".error2").length != 0) {
+                    UTIL.logging("proc", `skip crawling : ${url} - deleted url`);
+                    continue;
+                }
 
                 const regdate = $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00";
                 const regUtc = UTIL.getUtcTime(regdate);
+
                 data[dataIdx] = {
                     _id : url.split("no=")[1].split("&")[0].trim(),
                     keyword : keyword,
@@ -107,6 +102,17 @@ async function crawlPage(keywordArr) {
                     ngtv_cnt : $(listItem).find(".dislike").text().trim(),
                     crawl_date : UTIL.getYmdDate(Date.now()),
                 };
+
+                // console.log("_id", url.split("no=")[1].split("&")[0].trim());
+                // console.log("keyword", keyword);
+                // console.log("board_id", url.split("id=")[1].split("&")[0].trim());
+                // console.log("board", $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim());
+                // console.log("title", $page(".sub-top-text-box .view_title2").text());
+                // console.log("url", url);
+                // console.log("regdate", $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00");
+                // console.log("pstv_cnt", $(listItem).find(".like").text().trim());
+                // console.log("ngtv_cnt", $(listItem).find(".dislike").text().trim());
+                // console.log("crawl_date", UTIL.getYmdDate(Date.now()));
 
                 dataIdx++;
                 await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
@@ -123,27 +129,33 @@ async function crawlPage(keywordArr) {
     if(bulkOps.length >= 1){
         const res = await DBCONN.bulkWriteDb(bulkOps);
         // console.log(res);
+        UTIL.logging("proc", `db write : ${bulkOps.length} documents`);
     }
 
-    DBCONN.selectDb({ regutc : { $gt : (Date.now()-interval) } })
+    DBCONN.selectDb({ regutc : { $gt : (Date.now()-pushTerm) } })
     .then((res) => {
+        let pushedCnt = 0;
         if(res.length >= 1){
             let msgTxt = [];
             let keyword;
-            res.forEach( (item) => {
-                let utcDate = new Date(item.regutc);
+            res.forEach( (doc) => {
+                let utcDate = new Date(doc.regutc);
                 let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
-                if(keyword !== item.keyword){
-                    keyword = item.keyword;
+                if(keyword !== doc.keyword){
+                    keyword = doc.keyword;
                     msgTxt.push(`\n[키워드 : ${keyword}]`);
                 }
-                msgTxt.push(`[${item.board}] <a href="${item.url}">${item.title}</a> ${regTime}`);
+                msgTxt.push(`[${doc.board}] <a href="${doc.url}">${doc.title}</a> ${regTime}`);
+                pushedCnt++;
             });
             TG.sendMsg(msgTxt.join("\n"));
+            UTIL.logging("proc", `pushed : ${msgTxt.join("\n")}`);
         }
+        UTIL.logging("proc", `pushed count : ${pushedCnt}`);
+        UTIL.logging("proc", `Done`);
     })
-    .catch((err)=> { throw err; });
+    .catch((err)=> { throw err; } );
 }
 
-crawlPage(keywordArr).catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
+crawlPage(keywordArr).catch(function (err) { UTIL.logging("err", err.toString()); });
 
