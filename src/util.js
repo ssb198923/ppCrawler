@@ -30,7 +30,5 @@ exports.getUtcTime = (ymdhis) => {
 }
 
 exports.logging = (type = "err", log) => {
-    let logFile = "err.log";
-    if(type == "proc") logFile = "process.log";
-    FS.appendFileSync(logFile,`[${new Date().toLocaleString()}] ${log}\n`);
+    FS.appendFileSync(type.toString().concat(".log"),`[${new Date().toLocaleString()}] ${log}\n`);
 }
