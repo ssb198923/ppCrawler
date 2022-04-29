@@ -1,4 +1,3 @@
 .env
 start.bat
-err.log
-process.log
+*.log
