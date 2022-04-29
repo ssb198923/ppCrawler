@@ -1,3 +1,5 @@
+const FS = require("fs");
+
 exports.getYmdDate = (utcdate) => {
     const date = new Date(utcdate);
     const year = date.getFullYear();
@@ -25,4 +27,10 @@ exports.getUtcTime = (ymdhis) => {
     dat.setSeconds(sec);
 
     return dat.getTime();
+}
+
+exports.logging = (type = "err", log) => {
+    let logFile = "err.log";
+    if(type == "proc") logFile = "process.log";
+    FS.appendFileSync(logFile,`[${new Date().toLocaleString()}] ${log}\n`);
 }

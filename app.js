@@ -142,8 +142,7 @@ async function crawlPage(keywordArr) {
             TG.sendMsg(msgTxt.join("\n"));
         }
     })
-    .catch((err)=> { throw err; } )
-    ;
+    .catch((err)=> { throw err; });
 }
 
 crawlPage(keywordArr).catch(function (err) { FS.appendFileSync('err.log',`[${new Date().toISOString()}] ${err.toString()}\n`); });
