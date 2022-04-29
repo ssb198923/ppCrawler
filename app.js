@@ -126,6 +126,7 @@ async function crawlPage(keywordArr) {
     let bulkOps = await getBulkOps(data);
     // console.log(bulkOps);
 
+    UTIL.logging("proc", `crawled count : ${bulkOps.length}`);
     if(bulkOps.length >= 1){
         const res = await DBCONN.bulkWriteDb(bulkOps);
         // console.log(res);
