@@ -142,8 +142,8 @@ async function crawlPage(keywordArr) {
     let pushTargetCnt = 0;
     let msgTxt = [];
     let targetIdList = [];
+    let keyword;
     for(target of pushTargetList) {
-        let keyword;
         let utcDate = new Date(target.regutc);
         let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
         if(keyword !== target.keyword){
