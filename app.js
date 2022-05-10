@@ -12,7 +12,7 @@ const crawlTerm = process.env.CRAWL_TERM;
 const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
-// const keywordArr = ['11번가'];
+// const keywordArr = ['네이버'];
 const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
 // const boardIdArr = ['ppomppu','freeboard'];
@@ -25,7 +25,7 @@ const getSearchHtml = async (keyword) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { UTIL.logging("err", err.toString()); });
+      .catch(function (err) { UTIL.logging("err", err.stack.toString()); });
 }
 
 const getPageHtml = async (url) => {
@@ -35,7 +35,7 @@ const getPageHtml = async (url) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { UTIL.logging("err", err.toString()); });
+      .catch(function (err) { UTIL.logging("err", err.stack.toString()); });
 }
 
 async function getBulkOps(data) {
@@ -81,12 +81,13 @@ async function crawlPage(keywordArr) {
                 decoded = ICONV.decode(Buffer.from(itemHtml.data, 'binary'), 'euc-kr');
                 const $page = CHEERIO.load(decoded);
 
+
                 if($page(".error2").length != 0) {
                     UTIL.logging("proc", `skip crawling : ${url} - deleted url`);
                     continue;
                 }
 
-                const regdate = $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00";
+                const regdate = $page(".sub-top-text-box").html().split("등록일:")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
                 const regUtc = UTIL.getUtcTime(regdate);
 
                 data[dataIdx] = {
@@ -184,5 +185,5 @@ async function crawlPage(keywordArr) {
 
 }
 
-crawlPage(keywordArr).catch(function (err) { UTIL.logging("err", err.toString()); });
+crawlPage(keywordArr).catch(function (err) { console.log(err); UTIL.logging("err", err.stack.toString()); });
 
