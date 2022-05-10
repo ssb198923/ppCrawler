@@ -12,8 +12,8 @@ const crawlTerm = process.env.CRAWL_TERM;
 const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
-// const keywordArr = ['GS'];
-const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
+const keywordArr = ['11번가'];
+// const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
 // const boardIdArr = ['ppomppu','freeboard'];
 
@@ -123,39 +123,65 @@ async function crawlPage(keywordArr) {
     data = data.filter(n => n.title != '' && typeof n.url != "undefined");
     // console.log(data);
 
-    let bulkOps = await getBulkOps(data);
+    const dataBulkOps = await getBulkOps(data);
     // console.log(bulkOps);
 
-    UTIL.logging("proc", `crawled count : ${bulkOps.length}`);
-    if(bulkOps.length >= 1){
-        const res = await DBCONN.bulkWriteDb(bulkOps);
+    UTIL.logging("proc", `crawled count : ${dataBulkOps.length}`);
+    if(dataBulkOps.length >= 1){
+        const res = await DBCONN.bulkWriteDb(dataBulkOps);
         // console.log(res);
-        UTIL.logging("proc", `db write : ${bulkOps.length} documents`);
+        UTIL.logging("proc", `db write : ${dataBulkOps.length} documents`);
     }
 
-    DBCONN.selectDb({ regutc : { $gt : (Date.now()-pushTerm) } })
-    .then((res) => {
-        let pushedCnt = 0;
-        if(res.length >= 1){
-            let msgTxt = [];
-            let keyword;
-            res.forEach( (doc) => {
-                let utcDate = new Date(doc.regutc);
-                let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
-                if(keyword !== doc.keyword){
-                    keyword = doc.keyword;
-                    msgTxt.push(`\n[키워드 : ${keyword}]`);
-                }
-                msgTxt.push(`[${doc.board}] <a href="${doc.url}">${doc.title}</a> ${regTime}`);
-                pushedCnt++;
-            });
-            TG.sendMsg(msgTxt.join("\n"));
-            UTIL.logging("proc", `pushed : ${msgTxt.join("\n")}`);
+    const pushTargetList = await DBCONN.selectDb({ 
+        regutc : { $gt : (Date.now()-pushTerm) }, 
+        pushed : { $nin : ["Y", "y"] } 
+    });
+
+    let pushTargetCnt = 0;
+    let msgTxt = [];
+    let targetIdList = [];
+    for(target of pushTargetList) {
+        let keyword;
+        let utcDate = new Date(target.regutc);
+        let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
+        if(keyword !== target.keyword){
+            keyword = target.keyword;
+            msgTxt.push(`\n[키워드 : ${keyword}]`);
+            targetIdList.push(target._id);
         }
-        UTIL.logging("proc", `pushed count : ${pushedCnt}`);
-        UTIL.logging("proc", `Done`);
-    })
-    .catch((err)=> { throw err; } );
+        msgTxt.push(`[${target.board}] <a href="${target.url}">${target.title}</a> ${regTime}`);
+        pushTargetCnt++;
+    }
+    UTIL.logging("proc", `push target count : ${pushTargetCnt}`);
+
+    if(pushTargetCnt >= 1){
+        let pushedList = [];
+        await TG.sendMsg(msgTxt.join("\n"))
+        .then((res) => {
+            UTIL.logging("proc", `pushed count : ${pushTargetCnt}`);
+            UTIL.logging("proc", `pushed : ${msgTxt.join("\n")}`);
+            if(res != null){
+                for( _id of targetIdList){
+                    pushedList.push({ "_id" : _id, "pushed" : "Y" });
+                }
+            }
+        })
+        .catch(() => {
+            UTIL.logging("proc", `Error exit : Check err.log`);
+        });
+
+        const pushedBulkOps = await getBulkOps(pushedList);
+        UTIL.logging("proc", `pushed update count : ${pushedBulkOps.length}`);
+        if(pushedBulkOps.length >= 1){
+            const res = await DBCONN.bulkWriteDb(pushedBulkOps);
+            // console.log(res);
+            UTIL.logging("proc", `db update : ${pushedBulkOps.length} documents`);
+        }
+    }
+    
+    UTIL.logging("proc", `Done`);
+
 }
 
 crawlPage(keywordArr).catch(function (err) { UTIL.logging("err", err.toString()); });

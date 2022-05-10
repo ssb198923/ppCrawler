@@ -25,9 +25,9 @@ exports.bulkWriteDb = (bulkOps) => {
 exports.selectDb = (query) => {
     return new Promise(function (resolve, reject){
         MongoClient.connect(url, function(err, db) {
-            if (err) reject(err);
+            if (err) reject(err);``
             const dbo = db.db(crawlDb);
-            dbo.collection(dbCollenction).find(query).toArray(function (err, res) {
+            dbo.collection(dbCollenction).find(query).sort({ keyword : 1, regutc : 1 }).toArray(function (err, res) {
                 if (err) reject(err);
                 // console.log(res);
                 db.close();
