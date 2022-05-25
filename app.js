@@ -151,9 +151,9 @@ async function crawlPage(keywordArr) {
         if(keyword !== target.keyword){
             keyword = target.keyword;
             msgTxt.push(`\n[키워드 : ${keyword}]`);
-            targetIdList.push(target._id);
         }
         msgTxt.push(`[${target.board}] <a href="${target.url}">${title}</a> ${regTime}`);
+        targetIdList.push(target._id);
         pushTargetCnt++;
     }
     UTIL.logging("proc", `push target count : ${pushTargetCnt}`);
