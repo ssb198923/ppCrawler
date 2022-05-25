@@ -144,10 +144,10 @@ async function crawlPage(keywordArr) {
     let msgTxt = [];
     let targetIdList = [];
     let keyword;
-    let title = HTMLENT.encode(target.title);
     for(target of pushTargetList) {
         let utcDate = new Date(target.regutc);
         let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
+        let title = HTMLENT.encode(target.title);
         if(keyword !== target.keyword){
             keyword = target.keyword;
             msgTxt.push(`\n[키워드 : ${keyword}]`);
