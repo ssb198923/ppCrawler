@@ -6,16 +6,18 @@ const CHEERIO = require("cheerio");
 const DBCONN = require("./src/dbConn");
 const UTIL = require("./src/util");
 const TG = require("./src/push");
+const HTMLENT = require("html-entities");
 require("dotenv").config();
 const pushTerm = process.env.PUSH_TERM;
 const crawlTerm = process.env.CRAWL_TERM;
 const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
-const keywordArr = ['네이버'];
+// const keywordArr = ['네이버'];
 // const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
-// const boardIdArr = ['ppomppu','freeboard'];
+const keywordArr = ['구글'];
+const filterBoardIdArr = ['stock', 'issue', 'bitcoin', 'money', 'humor'];
 
 const getSearchHtml = async (keyword) => {
     const encodedKeyword = encodeURI(keyword);
@@ -135,23 +137,25 @@ async function crawlPage(keywordArr) {
     }
 
     const pushTargetList = await DBCONN.selectDb({ 
-        regutc : { $gt : (Date.now()-pushTerm) }, 
+        regutc : { $gt : (Date.now()-pushTerm) },
+        board_id : { $nin : filterBoardIdArr },
         pushed : { $nin : ["Y", "y"] } 
     });
 
     let pushTargetCnt = 0;
     let msgTxt = [];
     let targetIdList = [];
+    let keyword;
     for(target of pushTargetList) {
-        let keyword;
         let utcDate = new Date(target.regutc);
         let regTime = ( utcDate.getHours() < 10 ? "0" + utcDate.getHours() : utcDate.getHours() ) + ":" + ( utcDate.getMinutes() < 10 ? "0" + utcDate.getMinutes() : utcDate.getMinutes() );
+        let title = HTMLENT.encode(target.title);
         if(keyword !== target.keyword){
             keyword = target.keyword;
             msgTxt.push(`\n[키워드 : ${keyword}]`);
-            targetIdList.push(target._id);
         }
-        msgTxt.push(`[${target.board}] <a href="${target.url}">${target.title}</a> ${regTime}`);
+        msgTxt.push(`[${target.board}] <a href="${target.url}">${title}</a> ${regTime}`);
+        targetIdList.push(target._id);
         pushTargetCnt++;
     }
     UTIL.logging("proc", `push target count : ${pushTargetCnt}`);
@@ -168,8 +172,9 @@ async function crawlPage(keywordArr) {
                 }
             }
         })
-        .catch(() => {
-            UTIL.logging("proc", `Error exit : Check err.log`);
+        .catch((err) => {
+            UTIL.logging("err", err.stack.toString());
+            UTIL.logging("proc", `Push error : Check err.log`);
         });
 
         const pushedBulkOps = await getBulkOps(pushedList);
