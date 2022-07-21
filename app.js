@@ -17,6 +17,7 @@ const urlPrefix = "https://www.ppomppu.co.kr/";
 const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
 // const boardIdArr = ['ppomppu','freeboard'];
+const filterBoardIdArr = ['stock', 'issue', 'bitcoin', 'money', 'humor', 'house', 'gojobs'];
 
 const getSearchHtml = async (keyword) => {
     const encodedKeyword = encodeURI(keyword);
@@ -137,6 +138,7 @@ async function crawlPage(keywordArr) {
 
     const pushTargetList = await DBCONN.selectDb({ 
         regutc : { $gt : (Date.now()-pushTerm) }, 
+        board_id : { $nin : filterBoardIdArr },
         pushed : { $nin : ["Y", "y"] } 
     });
 
