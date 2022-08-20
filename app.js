@@ -68,6 +68,7 @@ async function crawlPage(keywordArr) {
         const $list = $(".results_board .conts");
 
         for(const listItem of $list){
+            if($(listItem).find(".title a").length == 0) continue;
             const url = urlPrefix.concat('', $(listItem).find(".title a").attr("href"));
             const itemId = url.split("no=")[1].split("&")[0].trim();
             const itemRegDate = $(listItem).find(".desc span:nth-child(3)").text().replace(/[\.]/g, "").trim().concat("000000");
