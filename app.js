@@ -18,6 +18,7 @@ const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현�
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
 // const boardIdArr = ['ppomppu','freeboard'];
 const filterBoardIdArr = ['stock', 'issue', 'bitcoin', 'money', 'humor', 'house', 'gojobs'];
+const errMsgHeader = "[ppCrawler error]";
 
 const getSearchHtml = async (keyword) => {
     const encodedKeyword = encodeURI(keyword);
@@ -27,7 +28,12 @@ const getSearchHtml = async (keyword) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { UTIL.logging("err", err.stack.toString()); });
+      .catch(function (err) {
+        const errMsg = errMsgHeader + "\n" +
+                        err.stack.toString();
+        UTIL.logging("err", errMsg);
+        TG.sendMonBotMsg(errMsg);
+      });
 }
 
 const getPageHtml = async (url) => {
@@ -37,7 +43,12 @@ const getPageHtml = async (url) => {
         resultponseType: "arraybuffer",
         responseEncoding: "binary"
       })
-      .catch(function (err) { UTIL.logging("err", err.stack.toString()); });
+      .catch(function (err) { 
+        const errMsg = errMsgHeader + "\n" +
+                        err.stack.toString();
+        UTIL.logging("err", errMsg);
+        TG.sendMonBotMsg(errMsg);
+       });
 }
 
 async function getBulkOps(data) {
@@ -174,8 +185,11 @@ async function crawlPage(keywordArr) {
             }
         })
         .catch((err) => {
-            UTIL.logging("err", err.stack.toString());
             UTIL.logging("proc", `Push error : Check err.log`);
+            const errMsg = errMsgHeader + "\n" +
+                        err.stack.toString();
+            UTIL.logging("err", errMsg);
+            TG.sendMonBotMsg(errMsg);
         });
 
         const pushedBulkOps = await getBulkOps(pushedList);
@@ -191,5 +205,11 @@ async function crawlPage(keywordArr) {
 
 }
 
-crawlPage(keywordArr).catch(function (err) { console.log(err); UTIL.logging("err", err.stack.toString()); });
+crawlPage(keywordArr).catch(function (err) { 
+    console.log(err);
+    const errMsg = errMsgHeader + "\n" +
+                    err.stack.toString();
+    UTIL.logging("err", errMsg);
+    TG.sendMonBotMsg(errMsg);
+});
 

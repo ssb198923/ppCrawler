@@ -17,3 +17,18 @@ exports.sendMsg = (text) => {
         });        
     });
 };
+
+exports.sendMonBotMsg = (text) => {
+    return new Promise(function (resolve, reject){
+        const bot = new TelegramBot(process.env.MON_BOT_TOKEN, {polling: false});
+        bot.sendMessage(process.env.MON_CHANNEL_ID, text, { parse_mode :"html" })
+        .then((res) => {
+            resolve(res);
+            return res;
+        })
+        .catch((err) => {
+            reject(err);
+            throw err;
+        });        
+    });
+};
