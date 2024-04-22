@@ -101,7 +101,7 @@ async function crawlPage(keywordArr) {
                     continue;
                 }
 
-                const regdate = $page(".sub-top-text-box").html().split("등록일:")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
+                const regdate = $page(".topTitle-mainbox").html().split("등록일")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
                 const regUtc = UTIL.getUtcTime(regdate);
 
                 data[dataIdx] = {
