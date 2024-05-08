@@ -103,13 +103,14 @@ async function crawlPage(keywordArr) {
 
                 const regdate = $page(".topTitle-mainbox").html().split("등록일")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
                 const regUtc = UTIL.getUtcTime(regdate);
+                const titleTxt = $page("#topTitle h1").text().trim();
 
                 data[dataIdx] = {
                     _id : url.split("no=")[1].split("&")[0].trim(),
                     keyword : keyword,
                     board_id : url.split("id=")[1].split("&")[0].trim(),
                     board : $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim(),
-                    title : $page(".sub-top-text-box .view_title2").text().trim(),
+                    title : titleTxt,
                     url : url,
                     regdate : regdate,
                     regutc : regUtc,
