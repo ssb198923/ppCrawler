@@ -13,10 +13,9 @@ const crawlTerm = process.env.CRAWL_TERM;
 const delay = (timeToDelay) => new Promise((resolve) => setTimeout(resolve, timeToDelay));
 
 const urlPrefix = "https://www.ppomppu.co.kr/";
-// const keywordArr = ['네이버'];
+const keywordArr = ['네이버'];
 // const keywordArr = ['hmall', '감기몰', '더현대', '현대백화점', '현대홈쇼핑', '현대몰', 'h몰', '에이치몰'];
 // const keywordArr = ['롯데 ON', '11번가', '옥션', '네이버', '롯데온', 'SSG', 'K쇼핑', '지마켓', '위메프', '티몬', 'GS'];
-const keywordArr = ['구글'];
 const filterBoardIdArr = ['stock', 'issue', 'bitcoin', 'money', 'humor', 'house', 'gojobs'];
 
 const getSearchHtml = async (keyword) => {
@@ -89,7 +88,7 @@ async function crawlPage(keywordArr) {
                     continue;
                 }
 
-                const regdate = $page(".sub-top-text-box").html().split("등록일:")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
+                const regdate = $page(".topTitle-mainbox").html().split("등록일")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
                 const regUtc = UTIL.getUtcTime(regdate);
 
                 data[dataIdx] = {
@@ -97,7 +96,7 @@ async function crawlPage(keywordArr) {
                     keyword : keyword,
                     board_id : url.split("id=")[1].split("&")[0].trim(),
                     board : $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim(),
-                    title : $page(".sub-top-text-box .view_title2").text().trim(),
+                    title : $page("#topTitle h1").text().trim(),
                     url : url,
                     regdate : regdate,
                     regutc : regUtc,
@@ -106,16 +105,18 @@ async function crawlPage(keywordArr) {
                     crawl_date : UTIL.getYmdDate(Date.now()),
                 };
 
-                // console.log("_id", url.split("no=")[1].split("&")[0].trim());
-                // console.log("keyword", keyword);
-                // console.log("board_id", url.split("id=")[1].split("&")[0].trim());
-                // console.log("board", $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim());
-                // console.log("title", $page(".sub-top-text-box .view_title2").text());
-                // console.log("url", url);
-                // console.log("regdate", $page(".sub-top-text-box").text().split("등록일:")[1].split("\n")[0].trim().replace(/[- :]/gi,"")+"00");
-                // console.log("pstv_cnt", $(listItem).find(".like").text().trim());
-                // console.log("ngtv_cnt", $(listItem).find(".dislike").text().trim());
-                // console.log("crawl_date", UTIL.getYmdDate(Date.now()));
+                console.log("----------------------------------------------------------------------------");
+                console.log("_id", url.split("no=")[1].split("&")[0].trim());
+                console.log("keyword", keyword);
+                console.log("board_id", url.split("id=")[1].split("&")[0].trim());
+                console.log("board", $(listItem).find(".desc span:first-child").text().replace(/[\[\]]/g, "").trim());
+                console.log("title", $page("#topTitle h1").text());
+                console.log("url", url);
+                console.log("regdate", regdate);
+                console.log("pstv_cnt", $(listItem).find(".like").text().trim());
+                console.log("ngtv_cnt", $(listItem).find(".dislike").text().trim());
+                console.log("crawl_date", UTIL.getYmdDate(Date.now()));
+                console.log("----------------------------------------------------------------------------");
 
                 dataIdx++;
                 await delay( Math.floor(Math.random() * (4-1)+1) * 1000 );
@@ -124,15 +125,15 @@ async function crawlPage(keywordArr) {
     }
 
     data = data.filter(n => n.title != '' && typeof n.url != "undefined");
-    // console.log(data);
+    console.log("@data",data);
 
     const dataBulkOps = await getBulkOps(data);
-    // console.log(bulkOps);
+    console.log("@dataBulkOps",dataBulkOps);
 
     UTIL.logging("proc", `crawled count : ${dataBulkOps.length}`);
     if(dataBulkOps.length >= 1){
         const res = await DBCONN.bulkWriteDb(dataBulkOps);
-        // console.log(res);
+        console.log(res);
         UTIL.logging("proc", `db write : ${dataBulkOps.length} documents`);
     }
 
