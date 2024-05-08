@@ -104,6 +104,11 @@ async function crawlPage(keywordArr) {
                 const regdate = $page(".topTitle-mainbox").html().split("등록일")[1].split("조회수")[0].replace(/<.*/g,"").replace(/(&nbsp;)/g,"").trim().replace(/[- :]/gi,"")+"00";
                 const regUtc = UTIL.getUtcTime(regdate);
                 const titleTxt = $page("#topTitle h1").text().trim();
+                if(titleTxt == undefined || titleTxt=='' ||  url == undefined || url =='') {
+                const errMsg = `required value is undefined \n title = ${titleTxt} \n url = ${url}`
+                    UTIL.logging("err", errMsg);
+                    TG.sendMonBotMsg(errMsg);
+                }
 
                 data[dataIdx] = {
                     _id : url.split("no=")[1].split("&")[0].trim(),
@@ -136,7 +141,7 @@ async function crawlPage(keywordArr) {
         }
     }
 
-    data = data.filter(n => n.title != '' && typeof n.url != "undefined");
+    data = data.filter(n => {n.title != '' && typeof n.url != "undefined"});
     // console.log(data);
 
     const dataBulkOps = await getBulkOps(data);
